@@ -13,9 +13,9 @@ L = 100;
 
 Pm = 1; % transition rate per unit time of moving to another lattice site
 
-Pp = 0.7; % proliferation rate per unit time of giving rise to another agent
+Pp = 0.1; % proliferation rate per unit time of giving rise to another agent
 
-Pd = 0; % death rate per unit time
+Pd = 0.05; % death rate per unit time
 
 
 cells = zeros(L,L); % array that will store the sites
@@ -55,6 +55,8 @@ iter = 0; % count the number of iterations
 
 Q_initial = Q;
 
+%%%%%%%
+%Gillespie simulation
 
 while t < t_final
 
@@ -234,12 +236,17 @@ while t < t_final
     store_time(iter) = t;
 end
 
-store_time  = (Pp - Pd)*store_time; % rescale time to allow parameter comparison
+rescaled_time  = (Pp - Pd)*store_time; % rescale time to allow parameter comparison
+
+rescaled_density = ((Pp-Pd)/(Pp)) * NumberOfCells/L^2;
+
 
 % plot the changes in the number of cells
 figure
 
-plot(store_time,NumberOfCells/L^2,'LineWidth', 2);set(gca,'FontSize',14); % number of cells in the system
+%plot(rescaled_time,NumberOfCells/L^2,'LineWidth', 2);set(gca,'FontSize',14); % number of cells in the system
+plot(rescaled_time,rescaled_density,'LineWidth', 2);set(gca,'FontSize',14); % number of cells in the system
+
 
 xlabel('time','FontSize',14)
 ylabel('density','FontSize',14)
@@ -256,14 +263,16 @@ f = @(t) cA0_bar * exp(t)/(1+cA0_bar*(exp(t)-1)); % solution to the equation
 
 for i = 1 : length(store_time)
    % store_time(i) = (Pp - Pd) * store_time(i); % rescale time
-    y(i) = f(store_time(i)); 
+    y(i) = f(rescaled_time(i)); 
 end
 
 %%% plot logistic solution 
 
+
+
 hold on
-plot(store_time,y,'LineWidth', 2)
-h_legend = legend('Gillespie 2D','Logistic growth','Total');
+plot(rescaled_time,y,'LineWidth', 2)
+h_legend = legend('Gillespie 2D','Logistic growth');
 set(h_legend,'FontSize',14)
 xlabel('time','FontSize',14)
 ylabel('density','FontSize',14)
