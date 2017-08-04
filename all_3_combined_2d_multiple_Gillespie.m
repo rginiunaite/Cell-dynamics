@@ -1,4 +1,4 @@
-% combination of Gillespie (40 realisations), logistic and Runge-Kutta in 2D
+% combination of Gillespie (40 realisations), logistic and Runge-Kutta with KSA in 2D
 
 clear all
 
@@ -9,13 +9,13 @@ clear all
 dim = 2;
 
 % length of the side of square
-L = 10;
+L = 100;
 
 Pm = 1; % transition rate per unit time of moving to another lattice site
 
-Pp = 1; % proliferation rate per unit time of giving rise to another agent
+Pp = 0.5; % proliferation rate per unit time of giving rise to another agent
 
-Pd = 0.5; % death rate per unit time
+Pd = 0.1; % death rate per unit time
 
 
 cells = zeros(L,L); % array that will store the sites
@@ -45,12 +45,12 @@ Q = sum(sum(cells)); % store the number of cells at different times
 
 Q_initial = Q;
 
-t_final = 50; % time interval for Gillespie algorithm
+t_final = 40; % time interval for Gillespie algorithm
 
 %%%%%%%
 % Gillespie will be done mutliple times
     
-Gillespie_iterations = 40;
+Gillespie_iterations = 1;
 
 %%%%%
 % Preallocate size approximately to save time, not sure how much time it saves 
@@ -287,11 +287,30 @@ rescaled_density = (Pp - Pd)/Pp * average_NumberOfCells/L^2;
 % plot the changes in the number of cells
 figure
 
-plot(rescaled_time,rescaled_density(1:length(rescaled_time)),'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
+% plot(rescaled_time,rescaled_density(1:length(rescaled_time)),'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
+% %h_legend = legend('1st component','2nd component','Total');
+% %set(h_legend,'FontSize',14)
+% xlabel('rescaled time','FontSize',14)
+% ylabel('rescaled density','FontSize',14)
+
+% save data
+
+save_time = rescaled_time;
+save_density = rescaled_density(1:length(rescaled_time));
+save_cA0 = Q_initial/L^2; % initial density
+save_store_time = store_time; % these have to be saved
+
+save('gillespie2D.mat','save_time','save_density','save_cA0','save_store_time');
+
+S = load('gillespie2D.mat');
+
+plot(S.save_time,S.save_density,'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
 %h_legend = legend('1st component','2nd component','Total');
 %set(h_legend,'FontSize',14)
 xlabel('rescaled time','FontSize',14)
 ylabel('rescaled density','FontSize',14)
+
+
 
 
 
@@ -350,10 +369,10 @@ for i = 2 : N
     
     t = t + dt;
 
-    k1 = dynamics (t,y(:,i-1),Pm,Pp,Pd,max_rad);
-    k2 = dynamics (t+dt/2,y(:,i-1)+dt/2 * k1,Pm,Pp,Pd,max_rad);
-    k3 = dynamics (t+dt/2,y(:,i-1)+dt/2 * k2,Pm,Pp,Pd,max_rad);
-    k4 = dynamics (t+dt, y(:,i-1) + dt*k3,Pm,Pp,Pd,max_rad);
+    k1 = dynamics (t,y(:,i-1),Pm,Pp,Pd,max_rad,dr);
+    k2 = dynamics (t+dt/2,y(:,i-1)+dt/2 * k1,Pm,Pp,Pd,max_rad,dr);
+    k3 = dynamics (t+dt/2,y(:,i-1)+dt/2 * k2,Pm,Pp,Pd,max_rad,dr);
+    k4 = dynamics (t+dt, y(:,i-1) + dt*k3,Pm,Pp,Pd,max_rad,dr);
     y(:,i) = y(:,i-1) + dt/6 * (k1 + 2*k2 + 2*k3 + k4);  
     
     store_time_Runge(i) = t;
@@ -367,7 +386,7 @@ y_rescaled = (Pp-Pd)/Pp * y;
 
 hold on
 plot(rescaled_time,y_rescaled(1,:),'LineWidth', 3)
-h_legend = legend('Gillespie 1D','Logistic growth','KSA');
+h_legend = legend('Gillespie 2D','Logistic growth','KSA');
 set(h_legend,'FontSize',14)
 xlabel('rescaled time','FontSize',14)
 ylabel('rescaled density','FontSize',14)
@@ -381,9 +400,9 @@ set(gca,'FontSize',24)
 
 
 
-function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad)
+function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad,dr)
     
-    dr = 0.5; % radially approximated at this distance (after distance 5), i.e 5, 5 + dr, 5 + 2dr
+    
 
     numberDer = (round(max_rad) - 5)/dr ; % this is to cound the number of additional derivatives
      
@@ -392,22 +411,22 @@ function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad)
     deriv(1) = (Pp*(y(1)-y(2)) - Pd *y(1)); % dynamics of one-point distribution function
     
     deriv(2) = (Pm*0.5* (y(4) + 2 * y(3) - 3* y(2)) - 2 * Pd*y(2) + ...
-        Pp * 0.5 * (y(1) - y(2)) + 0.5 * Pp * (y(3) + y(4)) *(y(1) - y(2))^2 /(y(1)^2*(1-y(1))));
+        Pp * 0.5 * (y(1) - y(2)) + 0.5 * Pp * (y(3) + y(4)) *(y(1) - y(2))^2 /(y(1)^2*(1-y(1)))); % distance 1
     
     deriv(3) = 0.5 * Pm * (y(2) + y(5) + y(2) + y(5) - 4*y(3)) - ...
-        2 * Pd * y(3) + 0.5 * Pp * (y(1) - y(3))* (y(1) - y(2))*(y(2)+y(5)+y(2)+ y(5))/(y(1)^2*(1-y(1)));
+        2 * Pd * y(3) + 0.5 * Pp * (y(1) - y(3))* (y(1) - y(2))*(y(2)+y(5)+y(2)+ y(5))/(y(1)^2*(1-y(1))); % distance srt(2)
     
     deriv(4) = 0.5 * Pm * (y(7) + y(2) + y(5) + y(5) - 4*y(4)) - ...
-        2 * Pd * y(4) + 0.5 * Pp * (y(1) - y(4))* (y(1) - y(2))*(y(7)+y(2)+y(5)+ y(5))/(y(1)^2*(1-y(1)));
+        2 * Pd * y(4) + 0.5 * Pp * (y(1) - y(4))* (y(1) - y(2))*(y(7)+y(2)+y(5)+ y(5))/(y(1)^2*(1-y(1))); % distance 2
     
     deriv(5) = 0.5 * Pm * (y(8) + y(3) + y(6) + y(4) - 4*y(5)) - ...
-        2 * Pd * y(5) + 0.5 * Pp * (y(1) - y(5))* (y(1) - y(2))*(y(8)+y(3)+y(6)+ y(4))/(y(1)^2*(1-y(1)));
+        2 * Pd * y(5) + 0.5 * Pp * (y(1) - y(5))* (y(1) - y(2))*(y(8)+y(3)+y(6)+ y(4))/(y(1)^2*(1-y(1))); % distance sqrt(5)
     
     deriv(6) = 0.5 * Pm * (y(9) + y(5) + y(9) + y(5) - 4*y(6)) - ...
-        2 * Pd * y(6) + 0.5 * Pp * (y(1) - y(6))* (y(1) - y(2))*(y(9)+y(5)+y(9)+ y(5))/(y(1)^2*(1-y(1))); 
+        2 * Pd * y(6) + 0.5 * Pp * (y(1) - y(6))* (y(1) - y(2))*(y(9)+y(5)+y(9)+ y(5))/(y(1)^2*(1-y(1))); % distance sqrt(8)
     
     deriv(7) = 0.5 * Pm * (y(10) + y(4) + y(8) + y(8) - 4*y(7)) - ...
-        2 * Pd * y(7) + 0.5 * Pp * (y(1) - y(7))* (y(1) - y(2))*(y(10)+y(4)+y(8)+ y(8))/(y(1)^2*(1-y(1)));     
+        2 * Pd * y(7) + 0.5 * Pp * (y(1) - y(7))* (y(1) - y(2))*(y(10)+y(4)+y(8)+ y(8))/(y(1)^2*(1-y(1))); % distance 3     
     
     deriv(8) = 0.5 * Pm * (y(11) + y(9) + y(5) + y(7) - 4*y(8)) - ...
         2 * Pd * y(8) + 0.5 * Pp * (y(1) - y(8))* (y(1) - y(2))*(y(11)+y(9)+y(5)+ y(7))/(y(1)^2*(1-y(1)));
@@ -420,17 +439,31 @@ function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad)
     
     deriv(11) = 0.5 * Pm * (y(13) + y(10) + y(8) + y(15) - 4*y(11)) - ...
         2 * Pd * y(11) + 0.5 * Pp * (y(1) - y(11))* (y(1) - y(2))*(y(13)+y(10)+y(8)+ y(15))/(y(1)^2*(1-y(1)));
-    
+        
     deriv(12) = 0.5 * Pm * (y(9) + y(9) + y(14) + y(14) - 4*y(12)) - ...
         2 * Pd * y(12) + 0.5 * Pp * (y(1) - y(12))* (y(1) - y(2))*(y(9)+y(9)+y(14)+ y(14))/(y(1)^2*(1-y(1)));  
     
     deriv(13) = 0.5 * Pm * (y(11) + y(14) + y(9) + y(15) - 4*y(13)) - ...
-        2 * Pd * y(13) + 0.5 * Pp * (y(1) - y(13))* (y(1) - y(2))*(y(11)+y(14)+y(9)+ y(15))/(y(1)^2*(1-y(1))); 
+        2 * Pd * y(13) + 0.5 * Pp * (y(1) - y(13))* (y(1) - y(2))*(y(11)+y(14)+y(9)+ y(15))/(y(1)^2*(1-y(1))); % distance sqrt(20)
+    
+    
+    %%%% If dr =0.5 fixed, I will not vary it, then
     
     deriv(14) = 0.5 * Pm * (y(13) + y(12) + y(16) + y(16) - 4*y(14)) - ...
-        2 * Pd * y(14) + 0.5 * Pp * (y(1) - y(14))* (y(1) - y(2))*(y(13)+y(12)+y(16)+ y(16))/(y(1)^2*(1-y(1)));
+        2 * Pd * y(14) + 0.5 * Pp * (y(1) - y(14))* (y(1) - y(2))*(y(13)+y(12)+y(16)+ y(16))/(y(1)^2*(1-y(1))); % distance 5
     
     
+    %%%% be careful because actually y(16) depend on dr    FALSE!!!!!!!!!
+%     if sqrt(32) < 5 + dr && sqrt(34) < 5 +dr
+%     deriv(14) = 0.5 * Pm * (y(13) + y(12) + y(15) + y(15) - 4*y(14)) - ...
+%         2 * Pd * y(14) + 0.5 * Pp * (y(1) - y(14))* (y(1) - y(2))*(y(13)+y(12)+y(15)+ y(15))/(y(1)^2*(1-y(1)));
+%     elseif  sqrt(32) > 5 +dr
+%     deriv(14) = 0.5 * Pm * (y(13) + y(12) + y(16) + y(16) - 4*y(14)) - ...
+%         2 * Pd * y(14) + 0.5 * Pp * (y(1) - y(14))* (y(1) - y(2))*(y(13)+y(12)+y(16)+ y(16))/(y(1)^2*(1-y(1)));
+%     else 
+%     deriv(14) = 0.5 * Pm * (y(13) + y(12) + y(15) + y(16) - 4*y(14)) - ...
+%         2 * Pd * y(14) + 0.5 * Pp * (y(1) - y(14))* (y(1) - y(2))*(y(13)+y(12)+y(15)+ y(16))/(y(1)^2*(1-y(1)));       
+%     end       
     % now the distance is more than 5, so all will be approximated
     % uniformly 
     
@@ -441,12 +474,13 @@ function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad)
     i = 15; % will start considering regular grid from this derivative
     
     % update derivatives until 1 before maximal radius
-    while current_radius +dr < max_rad -dr % this is not correct
+    while current_radius +dr < max_rad -dr % this is very approximate
         
         current_radius = current_radius + dr; % increase radius by dr
         
         deriv(i) = Pm * (y(i-1)+ y(i+1) - 2 *y(i))/dr^2 + 1/current_radius * (y(i+1) - y(i-1))/(2*dr) ...
             - 2 * Pd * y(i) + Pp * (y(1) - y(i))* (y(1) - y(2))*(y(i+1)+ y(i-1))/(y(1)^2*(1-y(1)));
+        
         i = i+1;
     end
     

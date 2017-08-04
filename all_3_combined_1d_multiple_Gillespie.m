@@ -1,4 +1,4 @@
-% combination of Gillespie (40 realisations), logistic and Runge-Kutta in 1D
+% combination of Gillespie (40 realisations), logistic and Runge-Kutta with KSA in 1D
 
 clear all
 
@@ -8,13 +8,13 @@ clear all
 dim = 1;
 
 % length of the domain
-L = 1000;
+L = 100;
 
 Pm = 1; % transition rate per unit time of moving to another lattice site
 
-Pp = 1; % proliferation rate per unit time of giving rise to another agent
+Pp = 0.5; % proliferation rate per unit time of giving rise to another agent
 
-Pd = 0; % death rate per unit time
+Pd = 0.1; % death rate per unit time
 
 
 cells = zeros(L,dim); % array that will store the sites, this is just for 1d
@@ -227,14 +227,38 @@ average_NumberOfCells = Sum_NumberOfCells/Gillespie_iterations;
 
 rescaled_density = (Pp - Pd)/Pp * average_NumberOfCells/L;
 
-% plot the changes in the number of cells
+
+
+% save data
+
+save_time = rescaled_time;
+save_density = rescaled_density(1:length(rescaled_time));
+save_cA0 = Q_initial/L; % initial density
+save_store_time = store_time; % these have to be saved
+
+save('gillespie1D_Pp05_Pd01.mat','save_time','save_density','save_cA0','save_store_time');
+
+S = load('gillespie1D_Pp05_Pd01.mat');
+
 figure
 
-plot(rescaled_time,rescaled_density(1:length(rescaled_time)),'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
+plot(S.save_time,S.save_density,'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
 %h_legend = legend('1st component','2nd component','Total');
 %set(h_legend,'FontSize',14)
 xlabel('rescaled time','FontSize',14)
 ylabel('rescaled density','FontSize',14)
+
+
+
+
+% plot the changes in the number of cells
+% figure
+% 
+% plot(rescaled_time,rescaled_density(1:length(rescaled_time)),'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
+% %h_legend = legend('1st component','2nd component','Total');
+% %set(h_legend,'FontSize',14)
+% xlabel('rescaled time','FontSize',14)
+% ylabel('rescaled density','FontSize',14)
 
 
 
