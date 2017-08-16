@@ -73,8 +73,8 @@ gammaA0 = ones(L,max_iter_gamma); % size of gamma A0
 
 
     for i = 1:L
-        gammaAA(i) = S.save_cA0;
-        gammaA0(i) = (1-S.save_cA0); 
+        gammaAA(i) = 3.89*S.save_cA0^3;
+        gammaA0(i) = 3.89*S.save_cA0*(1-S.save_cA0)^2; 
     end
 
 %     gamma(1:L,1) = gammaAA(:,1);
@@ -116,12 +116,16 @@ for i = 2 : N
 end
 
 
-                % use fsolve to find new gamma
+% use fsolve to find new gamma
 final = size(y(1,:),2);
 
+options = optimoptions('fsolve','MaxIterations',10000, 'FunctionTolerance',1e-6,'MaxFunctionEvaluations',10000,'StepTolerance',1.0000e-08);
 
-[xAA,fval] = fsolve(@(gamma_unk)step3AA(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaAA(:,count));
-[xA0,fval] = fsolve(@(gamma_unk)step3A0(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaA0(:,count));
+[xA0,fval] = fsolve(@(gamma_unk)step3A0(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaA0(:,count),options);
+a=2;
+
+[xAA,fval] = fsolve(@(gamma_unk)step3AA(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaAA(:,count),options);
+[xA0,fval] = fsolve(@(gamma_unk)step3A0(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaA0(:,count),options);
 
 gammaAA(:,count+1) = xAA;
 gammaA0(:,count+1) = xA0;   
@@ -132,12 +136,12 @@ gammaA0(:,count+1) = xA0;
 
 count = count +1; % update count, it is 2 now
 
-tol = 2; % tolerance for the convergence of gamma
+tol = 5; % tolerance for the convergence of gamma
 
 
-while norm (gammaAA(:,count)-gammaAA(:,count-1))>tol % gamma(2) will not be updated but it does not matter.
+while norm (gammaAA(:,count)-gammaAA(:,count-1))>tol 
+    
 
-%norm (gamma(:,count)-gamma(:,count+1))
     % Runge Kutta method to solve ODEs to find density and pair densities
 
     t = 0; % start time
@@ -160,17 +164,16 @@ while norm (gammaAA(:,count)-gammaAA(:,count-1))>tol % gamma(2) will not be upda
     % use fsolve to find new gamma
     final = size(y(1,:),2);
     
-    
      
-    [xAA,fval] = fsolve(@(gamma_unk)step3AA(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaAA(:,count));
-    [xA0,fval] = fsolve(@(gamma_unk)step3A0(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaA0(:,count));
+    [xAA,fval] = fsolve(@(gamma_unk)step3AA(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaAA(:,count),options);
+    [xA0,fval] = fsolve(@(gamma_unk)step3A0(gamma_unk,y(2:L+1,final),L,y(1,final)),gammaA0(:,count),options);
    
     gammaAA(:,count+1) = xAA; % update new value of gamma
     gammaA0(:,count+1) = xA0; % update new value of gamma
 
     
-    gamma(1:L,count+1) = gammaAA(:,count+1);
-    gamma(L+1:2*L,count+1) = gammaA0(:,count+1);
+%     gamma(1:L,count+1) = gammaAA(:,count+1);
+%     gamma(L+1:2*L,count+1) = gammaA0(:,count+1);
     
     count = count + 1; % update new step
 end
