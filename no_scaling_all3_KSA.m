@@ -13,9 +13,9 @@ L = 100;
 
 Pm = 1; % transition rate per unit time of moving to another lattice site
 
-Pp = 0.4; % proliferation rate per unit time of giving rise to another agent
+Pp = 0.6; % proliferation rate per unit time of giving rise to another agent
 
-Pd = 0.6; % death rate per unit time
+Pd = 0.4; % death rate per unit time
 
 
 cells = zeros(L,L); % array that will store the sites
@@ -45,7 +45,7 @@ Q = sum(sum(cells)); % store the number of cells at different times
 
 Q_initial = Q;
 
-t_final = 50; % time interval for Gillespie algorithm
+t_final = 70; % time interval for Gillespie algorithm
 
 %%%%%%%
 % Gillespie will be done mutliple times
@@ -303,9 +303,9 @@ save_density = density(1:length(store_time));
 save_cA0 = Q_initial/L^2; % initial density
 save_store_time = store_time; % these have to be saved, same as save_time in this case
 
-save('gillespie2D_large_initial_Pp04_Pd06_no_scaling.mat','save_time','save_density','save_cA0','save_store_time');
+save('gillespie2D_large_initial_Pp06_Pd04_no_scaling.mat','save_time','save_density','save_cA0','save_store_time');
 
-S = load('gillespie2D_large_initial_Pp04_Pd06_no_scaling.mat');
+S = load('gillespie2D_large_initial_Pp06_Pd04_no_scaling.mat');
 
 plot(S.save_time,S.save_density,'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
 %h_legend = legend('1st component','2nd component','Total');
@@ -497,8 +497,8 @@ function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad,dr)
 %     deriv(last) =  Pm * (y(last-1)+ y(2) - 2 *y(last))/dr^2 + 1/current_radius * (y(2) - y(last-1))/(2*dr) ...
 %             - 2 * Pd * y(last) + Pp * (y(1) - y(last))* (y(1) - y(2))*(y(2)+ y(last-1))/(y(1)^2*(1-y(1)));
     % boundary conditions correctly
-    deriv(last) =  Pm * (y(last-1)+ y(last-1) - 2 *y(last))/dr^2 + 1/current_radius * (y(2) - y(last-1))/(2*dr) ...
-            - 2 * Pd * y(last) + Pp * (y(1) - y(last))* (y(1) - y(2))*(y(last-1)+ y(last-1))/(y(1)^2*(1-y(1)));
+    deriv(last) =  Pm * (y(last-1)+ y(2) - 2 *y(last))/dr^2 + 1/current_radius * (y(2) - y(last-1))/(2*dr) ...
+            - 2 * Pd * y(last) + Pp * (y(1) - y(last))* (y(1) - y(2))*(y(last-1)+ y(2))/(y(1)^2*(1-y(1)));
         
 end
 

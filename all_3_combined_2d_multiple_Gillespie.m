@@ -8,7 +8,7 @@ clear all
 % lattice dimension
 dim = 2;
 
-% length of the side of square
+% half length of the side of square
 L = 100;
 
 Pm = 1; % transition rate per unit time of moving to another lattice site
@@ -23,7 +23,8 @@ cells = zeros(L,L); % array that will store the sites
 % initially choose randomly if each state is occupied or no
 
 % choose a random number for each state
-rand_initial = rand(L,L)/1.9;
+initial_percentage = 1.9;% 1.9 means that only 5% of sites are randomly occupied, if 1, then 50% 1.5when Pp=1, Pd=0.5
+rand_initial = rand(L,L)/initial_percentage; 
 
 for i = 1:L      
    % if the random number is greater than 0.5, then assume that initially
@@ -45,7 +46,7 @@ Q = sum(sum(cells)); % store the number of cells at different times
 
 Q_initial = Q;
 
-t_final = 40; % time interval for Gillespie algorithm
+t_final = 50; % time interval for Gillespie algorithm
 
 %%%%%%%
 % Gillespie will be done mutliple times
@@ -66,196 +67,193 @@ store_time = zeros(1,len);
 for j =1:Gillespie_iterations
 
     a0 = (Pm + Pp + Pd)*Q_initial; % total propensity function 
-    Q = Q_initial;
-    cells = cells_initial;
+    Q = Q_initial; % counts the number of cells
+    cells = cells_initial; % keeps track of cells at different times 
         
     
     t = 0; % initialise time
     iter = 0; % count the number of iterations
-
-    %Cells = zeros(L,30);
-
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     while t < t_final
 
-    iter = iter + 1;
-    NumberOfCells(iter,j) = Q;
-    %Cells(:,iter) = cells; % check how it looks like
-    
-    tau = log (1/rand) / a0; % choose time till the next event
+        iter = iter + 1;
+        NumberOfCells(iter,j) = Q;
+        %Cells(:,iter) = cells; % check how it looks like
 
-    % choose which event occurs (movement, proliferation or death)#
+        tau = log (1/rand) / a0; % choose time till the next event
 
-    R = a0*rand;
+        % choose which event occurs (movement, proliferation or death)#
 
-    % Movement event
-    if R < Pm*Q
-        
-       random_permutation_row = randperm(L);
-       random_permutation_column = randperm(L);
-       agent_ID_row = random_permutation_row(1); % choose a random agent 
-       agent_ID_column = random_permutation_column(1); % choose a random agent 
-       
-       % check if it is actually an agent and not zero at that point and if
-       % not choose until it is an agent
-       while cells(agent_ID_row,agent_ID_column) == 0
+        R = a0*rand;
+
+        % Movement event
+        if R < Pm*Q
+
            random_permutation_row = randperm(L);
            random_permutation_column = randperm(L);
            agent_ID_row = random_permutation_row(1); % choose a random agent 
-           agent_ID_column = random_permutation_column(1); % choose a random agent  
-       end
-       
-       
+           agent_ID_column = random_permutation_column(1); % choose a random agent 
 
-       % choose one of its 4 neighbours
-       random_number = rand;
-       % neighbour up
-       if random_number < 0.25
-          neighbour_ID_row = agent_ID_row + 1; 
-          neighbour_ID_column = agent_ID_column; 
-          %periodic boundary conditions
-          if neighbour_ID_row == L+1
-             neighbour_ID_row = 1;  
-          end
-          
-       % neighbour down        
-       elseif random_number > 0.25 && random_number < 0.5
-          neighbour_ID_row = agent_ID_row -1;
-          neighbour_ID_column = agent_ID_column;       
-          %periodic boundary conditions
-          if neighbour_ID_row == 0
-             neighbour_ID_row = L;  
-          end
-          
-       % neighbour left
-       elseif random_number > 0.5 && random_number < 0.75
-          neighbour_ID_column = agent_ID_column -1;
-          neighbour_ID_row = agent_ID_row;
-          %periodic boundary conditions
-          if neighbour_ID_column == 0
-             neighbour_ID_column = L;  
-          end        
-          
-       % neighbour right
-       elseif random_number > 0.75
-          neighbour_ID_column = agent_ID_column +1;
-          neighbour_ID_row = agent_ID_row;
-          %periodic boundary conditions
-          if neighbour_ID_column == L+1
-             neighbour_ID_column = 1;  
-          end    
-          
-       end
+           % check if it is actually an agent and not zero at that point and if
+           % not choose until it is an agent
+           while cells(agent_ID_row,agent_ID_column) == 0
+               random_permutation_row = randperm(L);
+               random_permutation_column = randperm(L);
+               agent_ID_row = random_permutation_row(1); % choose a random agent 
+               agent_ID_column = random_permutation_column(1); % choose a random agent  
+           end
 
-       % check if the neighbour is empty, if yes, move the cell to that grid
-       if cells(neighbour_ID_row,neighbour_ID_column) == 0
-          cells(neighbour_ID_row,neighbour_ID_column) = 1;
-          cells(agent_ID_row,agent_ID_column) = 0;
 
-       end
 
-    end
+           % choose one of its 4 neighbours
+           random_number = rand;
+           % neighbour up
+           if random_number < 0.25
+              neighbour_ID_row = agent_ID_row + 1; 
+              neighbour_ID_column = agent_ID_column; 
+              %periodic boundary conditions
+              if neighbour_ID_row == L+1
+                 neighbour_ID_row = 1;  
+              end
 
-    % Proliferation event
-    if R > Pm*Q && R < (Pm+Pp)*Q
+           % neighbour down        
+           elseif random_number > 0.25 && random_number < 0.5
+              neighbour_ID_row = agent_ID_row -1;
+              neighbour_ID_column = agent_ID_column;       
+              %periodic boundary conditions
+              if neighbour_ID_row == 0
+                 neighbour_ID_row = L;  
+              end
 
-       random_permutation_row = randperm(L);
-       random_permutation_column = randperm(L);
-       agent_ID_row = random_permutation_row(1); % choose a random agent 
-       agent_ID_column = random_permutation_column(1); % choose a random agent 
-       
-       % check if it is actually an agent and not zero at that point and if
-       % not choose until it is an agent
-       while cells(agent_ID_row,agent_ID_column) == 0
+           % neighbour left
+           elseif random_number > 0.5 && random_number < 0.75
+              neighbour_ID_column = agent_ID_column -1;
+              neighbour_ID_row = agent_ID_row;
+              %periodic boundary conditions
+              if neighbour_ID_column == 0
+                 neighbour_ID_column = L;  
+              end        
+
+           % neighbour right
+           elseif random_number > 0.75
+              neighbour_ID_column = agent_ID_column +1;
+              neighbour_ID_row = agent_ID_row;
+              %periodic boundary conditions
+              if neighbour_ID_column == L+1
+                 neighbour_ID_column = 1;  
+              end    
+
+           end
+
+           % check if the neighbour is empty, if yes, move the cell to that grid
+           if cells(neighbour_ID_row,neighbour_ID_column) == 0
+              cells(neighbour_ID_row,neighbour_ID_column) = 1;
+              cells(agent_ID_row,agent_ID_column) = 0;
+
+           end
+
+        end
+
+        % Proliferation event
+        if R > Pm*Q && R < (Pm+Pp)*Q
+
            random_permutation_row = randperm(L);
            random_permutation_column = randperm(L);
            agent_ID_row = random_permutation_row(1); % choose a random agent 
-           agent_ID_column = random_permutation_column(1); % choose a random agent  
-       end
-       
-       
+           agent_ID_column = random_permutation_column(1); % choose a random agent 
 
-       % choose one of its 4 neighbours
-       random_number = rand;
-       % neighbour up
-       if random_number < 0.25
-          neighbour_ID_row = agent_ID_row + 1; 
-          neighbour_ID_column = agent_ID_column; 
-          %periodic boundary conditions
-          if neighbour_ID_row == L+1
-             neighbour_ID_row = 1;  
-          end
-          
-       % neighbour down        
-       elseif random_number > 0.25 && random_number < 0.5
-          neighbour_ID_row = agent_ID_row -1;
-          neighbour_ID_column = agent_ID_column;       
-          %periodic boundary conditions
-          if neighbour_ID_row == 0
-             neighbour_ID_row = L;  
-          end
-          
-       % neighbour left
-       elseif random_number > 0.5 && random_number < 0.75
-          neighbour_ID_column = agent_ID_column -1;
-          neighbour_ID_row = agent_ID_row;
-          %periodic boundary conditions
-          if neighbour_ID_column == 0
-             neighbour_ID_column = L;  
-          end        
-          
-       % neighbour right
-       elseif random_number > 0.75
-          neighbour_ID_column = agent_ID_column +1;
-          neighbour_ID_row = agent_ID_row;
-          %periodic boundary conditions
-          if neighbour_ID_column == L+1
-             neighbour_ID_column = 1;  
-          end    
-          
-       end
+           % check if it is actually an agent and not zero at that point and if
+           % not choose until it is an agent
+           while cells(agent_ID_row,agent_ID_column) == 0
+               random_permutation_row = randperm(L);
+               random_permutation_column = randperm(L);
+               agent_ID_row = random_permutation_row(1); % choose a random agent 
+               agent_ID_column = random_permutation_column(1); % choose a random agent  
+           end
 
-       % check if the neighbour is empty, if yes, move the cell to that grid
-       if cells(neighbour_ID_row,neighbour_ID_column) == 0
-          cells(neighbour_ID_row,neighbour_ID_column) = 1;
-          Q = Q + 1; % increase in total population
-          a0 = a0 + (Pm + Pp + Pd); % change in total propensity function
-       end
 
-    end
-    
-    % Death event
 
-    if R > (Pm+Pp)*Q  && R < (Pm+Pp + Pd)*Q
+           % choose one of its 4 neighbours
+           random_number = rand;
+           % neighbour up
+           if random_number < 0.25
+              neighbour_ID_row = agent_ID_row + 1; 
+              neighbour_ID_column = agent_ID_column; 
+              %periodic boundary conditions
+              if neighbour_ID_row == L+1
+                 neighbour_ID_row = 1;  
+              end
 
-       random_permutation_row = randperm(L);
-       random_permutation_column = randperm(L);
-       agent_ID_row = random_permutation_row(1); % choose a random agent 
-       agent_ID_column = random_permutation_column(1); % choose a random agent 
-       
-       % check if it is actually an agent and not zero at that point and if
-       % not choose until it is an agent
-       while cells(agent_ID_row,agent_ID_column) == 0
+           % neighbour down        
+           elseif random_number > 0.25 && random_number < 0.5
+              neighbour_ID_row = agent_ID_row -1;
+              neighbour_ID_column = agent_ID_column;       
+              %periodic boundary conditions
+              if neighbour_ID_row == 0
+                 neighbour_ID_row = L;  
+              end
+
+           % neighbour left
+           elseif random_number > 0.5 && random_number < 0.75
+              neighbour_ID_column = agent_ID_column -1;
+              neighbour_ID_row = agent_ID_row;
+              %periodic boundary conditions
+              if neighbour_ID_column == 0
+                 neighbour_ID_column = L;  
+              end        
+
+           % neighbour right
+           elseif random_number > 0.75
+              neighbour_ID_column = agent_ID_column +1;
+              neighbour_ID_row = agent_ID_row;
+              %periodic boundary conditions
+              if neighbour_ID_column == L+1
+                 neighbour_ID_column = 1;  
+              end    
+
+           end
+
+           % check if the neighbour is empty, if yes, move the cell to that grid
+           if cells(neighbour_ID_row,neighbour_ID_column) == 0
+              cells(neighbour_ID_row,neighbour_ID_column) = 1;
+              Q = Q + 1; % increase in total population
+              a0 = a0 + (Pm + Pp + Pd); % change in total propensity function
+           end
+
+        end
+
+        % Death event
+
+        if R > (Pm+Pp)*Q  && R < (Pm+Pp + Pd)*Q
+
            random_permutation_row = randperm(L);
            random_permutation_column = randperm(L);
            agent_ID_row = random_permutation_row(1); % choose a random agent 
-           agent_ID_column = random_permutation_column(1); % choose a random agent  
-       end
-       
-       % cell dies
+           agent_ID_column = random_permutation_column(1); % choose a random agent 
 
-       cells(agent_ID_row, agent_ID_column) = 0;
-       Q = Q - 1; % decrease in total population
-       a0 = a0 - (Pm + Pp + Pd); % change in total propensity function
+           % check if it is actually an agent and not zero at that point and if
+           % not choose until it is an agent
+           while cells(agent_ID_row,agent_ID_column) == 0
+               random_permutation_row = randperm(L);
+               random_permutation_column = randperm(L);
+               agent_ID_row = random_permutation_row(1); % choose a random agent 
+               agent_ID_column = random_permutation_column(1); % choose a random agent  
+           end
+
+           % cell dies
+
+           cells(agent_ID_row, agent_ID_column) = 0;
+           Q = Q - 1; % decrease in total population
+           a0 = a0 - (Pm + Pp + Pd); % change in total propensity function
+        end
+
+        t = t + tau;
+
+        store_time(iter) = t;
     end
-
-    t = t + tau;
-
-    store_time(iter) = t;
-end
 
 
     % if a0=0, tau infinity, for further usage of timeset maximal time to the
@@ -271,7 +269,7 @@ end
 
 rescaled_time = (Pp-Pd)*store_time; % rescale time to allow parameter comparison
 
-TimeReductionFactor = 4; % when death rate is increase, this has to be increased as well
+TimeReductionFactor = 1.5; % when death rate is increased, this has to be increased as well
 
 rescaled_time = rescaled_time(1:round(length(rescaled_time)/TimeReductionFactor)); % make sure that all 40 simulations were running till the end time
 
@@ -282,7 +280,9 @@ for j=1:Gillespie_iterations
 end
 average_NumberOfCells = Sum_NumberOfCells/Gillespie_iterations;
 
-rescaled_density = (Pp - Pd)/Pp * average_NumberOfCells/L^2;
+%rescaled_density = (Pp - Pd)/Pp * average_NumberOfCells/L^2; %wrong
+rescaled_density = Pp/(Pp - Pd) * average_NumberOfCells/L^2;
+
 
 % plot the changes in the number of cells
 figure
@@ -300,9 +300,9 @@ save_density = rescaled_density(1:length(rescaled_time));
 save_cA0 = Q_initial/L^2; % initial density
 save_store_time = store_time; % these have to be saved
 
-save('gillespie2D.mat','save_time','save_density','save_cA0','save_store_time');
+save('gillespie2D_Pp05_Pd01.mat','save_time','save_density','save_cA0','save_store_time');
 
-S = load('gillespie2D.mat');
+S = load('gillespie2D_Pp05_Pd01.mat');
 
 plot(S.save_time,S.save_density,'LineWidth', 3);set(gca,'FontSize',14); % number of cells in the system
 %h_legend = legend('1st component','2nd component','Total');
@@ -318,7 +318,7 @@ ylabel('rescaled density','FontSize',14)
 % solution to the corresponding logistic growth equation
 
 cA0 = Q_initial/L^2; % initial density
-cA0_bar = (Pp - Pd)/(Pp)*cA0;
+cA0_bar = (Pp)/(Pp - Pd)*cA0;
 
 f = @(t) cA0_bar * exp(t)/(1+cA0_bar*(exp(t)-1)); % solution to the equation 
 
@@ -340,8 +340,9 @@ ylabel('rescaled density','FontSize',14)
 
 cA0 = Q_initial/L^2; % initial density of cells
 
-dt = 0.01; % time step
+dt = 0.001; % time step
 
+N = round(store_time(length(1:round(length(store_time)/TimeReductionFactor)))/dt); % number of simulations, chosen to be the same as for Gillespie
 N = round(store_time(length(1:round(length(store_time)/TimeReductionFactor)))/dt); % number of simulations, chosen to be the same as for Gillespie
 
 % Additional parameters
@@ -361,7 +362,7 @@ y(1,1) = cA0; % initial condition for 1-point distribution function
 
 t = 0; % start time
 
-dt = 0.01; % time step
+
 
 % 4th order Runge Kutta
 
@@ -381,7 +382,7 @@ end
 
 rescaled_time = (Pp-Pd)*store_time_Runge; % rescale time to allow parameter comparison
 
-y_rescaled = (Pp-Pd)/Pp * y;
+y_rescaled = Pp/(Pp-Pd) * y;
 
 
 hold on
@@ -485,10 +486,13 @@ function deriv = dynamics(t,y,Pm,Pp,Pd,max_rad,dr)
     end
     
     last = 14 + numberDer;
-    %periodic boundary conditions
+    % periodic boundary conditions
     deriv(last) =  Pm * (y(last-1)+ y(2) - 2 *y(last))/dr^2 + 1/current_radius * (y(2) - y(last-1))/(2*dr) ...
             - 2 * Pd * y(last) + Pp * (y(1) - y(last))* (y(1) - y(2))*(y(2)+ y(last-1))/(y(1)^2*(1-y(1)));
-    
+%     boundary conditions incorrectly
+%     deriv(last) =  Pm * (y(last-1)+ y(last-1) - 2 *y(last))/dr^2 + 1/current_radius * (y(2) - y(last-1))/(2*dr) ...
+%             - 2 * Pd * y(last) + Pp * (y(1) - y(last))* (y(1) - y(2))*(y(last-1)+ y(last-1))/(y(1)^2*(1-y(1)));
+        
 end
 
 
