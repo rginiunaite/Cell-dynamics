@@ -1,7 +1,7 @@
 %%%% ABC for the KSA on a hexagonal lattice
-
+clear all
  
-S = load('gillespie2D_Pp05_Pd01_40G.mat'); % load the data for a particular choice of Pp and Pd, this is our data
+S = load('gillespie2D_large_initial_Pp05_Pd01_40G.mat'); % load the data for a particular choice of Pp and Pd, this is our data
 
 
 
@@ -18,19 +18,21 @@ N = round(S.save_store_time(length(1:round(length(S.save_store_time)/TimeReducti
 
 t = 0; % initial time
 
-meas = 8; % assume there are meas measurements of real data
-
 Pm = 1;
 
 L = 3; % truncated length of the domain
 
-% assume that there are 6 measurements
-values = round(density_length/5);
+n_meas = 5; % number of measurements
 
-values_for_KSA = round(N/5)-1; % -1 so that the final one would be included in case N=5000
+% assume that there are 6 measurements
+values = round(density_length/(n_meas));
+
+values_for_KSA = round(N/(n_meas-1))-1; % -1 so that the final one would be included in case N=5000
 
 % number of simulations to apply ABC
-K = 1e4;
+dim = 10; % square matrix size
+
+K = dim^4;
 
 sum_stat = zeros(K,1);
 Pp = zeros(1,K);
@@ -40,6 +42,8 @@ for k=1:K
    Pp(k) = rand; 
    Pd(k) = rand/2;
 end
+%    Pp=0.1;
+%    Pd=0.2;
 
 % M = 3; % the number of replicates, should have different data sets, and most likely different initial conditions
 % %%% which would be used for 
@@ -71,7 +75,7 @@ end
 
                 dens_KSA = y_rescaled(1,:);
                 %%%%%%%%%% compute summary statistics
-            sum_stat(k) = norm (S.save_density(1:values:density_length) - dens_KSA(1:values_for_KSA:N));   
+            sum_stat(k) = norm (S.save_density(1:values:density_length) - dens_KSA(1:values_for_KSA:N)');   
 
       %  end
     end
@@ -80,44 +84,53 @@ end
 
 %%%%
 
-sum_stat = sum_stat'; % transpose, so that it would be easier to keep track of indices later when converted to a vector
-
-sum_stat = sum_stat(:); % convert it into a vector
+% If I had a matrix, I would need this
+% sum_stat = sum_stat'; % transpose, so that it would be easier to keep track of indices later when converted to a vector
+% 
+% sum_stat = sum_stat(:); % convert it into a vector
 
 [sorted_sum_stat,indices] = sort(sum_stat,'ascend'); % sort in ascending order for further selection of 1%
 
 %%%% eps will be 1% of the smallest distances
 
-one_percent_final = round(K*K/100);
+one_percent_final = round(K/100);
 
-small_indices = find(indices<one_percent_final); % find the indices that are below the threshold 1%
+%small_indices = find(indices<one_percent_final); % find the indices that are below the threshold 1%
+small_indices = indices(1:one_percent_final);
+small_indices = indices(1:50);
 
-
+%%%%%%%
+% Nonsense
 % extract the matrix entry number which corresponds to different values
 % of%%%%%%%%%%% 
 % Pp and Pd
-for j = 1 : length(small_indices)
-   if mod(small_indices(j),K)==0
-      Pp_ind(j) = small_indices(j)/K;
-      Pd_ind(j) = K;
-     
-   else 
-     Pp_ind(j) = floor(small_indices(j)/K)+1;
-     Pd_ind(j) = mod(small_indices(j),K);
-   end
-   
-end
+
+% 
+% for j = 1 : length(small_indices)
+%    if mod(small_indices(j),dim)==0
+%       Pp_ind(j) = small_indices(j)/dim;
+%       Pd_ind(j) = dim;
+%      
+%    else 
+%      Pp_ind(j) = floor(small_indices(j)/dim)+1;
+%      Pd_ind(j) = mod(small_indices(j),dim);
+%    end
+%    
+% end
 
 % sample = sorted_sum_stat(1:one_percent_final);
 
-% figure
-% histogram(Pp(Pp_ind),10)
-% 
-% figure 
-% histogram(Pd(Pd_ind),10)
-
-scatter(Pp(Pp_ind),Pd(Pd_ind))
-
+figure
+scatter(Pp(small_indices),Pd(small_indices),'LineWidth', 2)
+xlabel('P_p')
+ylabel('P_d')
+set(gca,'linewidth',3)
+%set(gca,'FontWeight','bold')
+set(gca,'FontSize',36)
+ax = gca;
+ax.YAxis.TickLabelFormat = '%,.2f';
+ax.XAxis.TickLabelFormat = '%,.1f';
+%title(['Percentage of accepted samples = ' num2str()],'FontSize',14,'FontWeight','Normal')
 
 function deriv = dynamics(t,y,Pm,Pp,Pd,L)
     
