@@ -1,7 +1,7 @@
 %%%% ABC for the KSA on a hexagonal lattice
 clear all
  
-S = load('gillespie2D_large_initial_Pp05_Pd01_40G.mat'); % load the data for a particular choice of Pp and Pd, this is our data
+S = load('gillespie2D_Pp05_Pd01_40G_hexa.mat'); % load the data for a particular choice of Pp and Pd, this is our data
 
 
 
@@ -22,7 +22,7 @@ Pm = 1;
 
 L = 3; % truncated length of the domain
 
-n_meas = 5; % number of measurements
+n_meas = 10; % number of measurements
 
 % assume that there are 6 measurements
 values = round(density_length/(n_meas));
@@ -97,7 +97,7 @@ one_percent_final = round(K/100);
 
 %small_indices = find(indices<one_percent_final); % find the indices that are below the threshold 1%
 small_indices = indices(1:one_percent_final);
-small_indices = indices(1:50);
+small_indices = indices(1:1000);
 
 %%%%%%%
 % Nonsense
